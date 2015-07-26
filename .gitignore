@@ -1,0 +1,10 @@
+/.gradle
+**/build
+**/logs
+**/.classpath
+**/.project
+**/.settings
+**/.springBeans
+**/bin
+/bin
+/build
