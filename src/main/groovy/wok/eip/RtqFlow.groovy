@@ -3,6 +3,7 @@ package wok.eip
 import groovy.json.JsonSlurper
 
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.beans.factory.annotation.Value
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.context.annotation.Description
@@ -21,6 +22,7 @@ import org.springframework.integration.support.MessageBuilder
 import org.springframework.messaging.Message
 import org.springframework.messaging.MessageChannel
 import org.springframework.messaging.MessageHandler
+import org.springframework.messaging.handler.annotation.Payload
 
 import com.fasterxml.jackson.core.JsonParseException
 import com.fasterxml.jackson.databind.JsonMappingException
@@ -34,10 +36,18 @@ class RtqFlow {
 
 	String nowFinanceQuoteUrl = 'http://finance.now.com/api/getAfeQuote.php?callback=d123131&item={ticker}&fidlist=100'
 
-	String[] tickers = ["00064", "00123", "00348"]
+	String[] tickers = [
+		"00064",
+		"00123",
+		"00348",
+		"715",
+		"735"
+	]
 	int nextIdx = 0
-	@Autowired QuoteSubscriptionRegistry subscriptionRegistry
 	
+	@Value('${rtq.batchsize:3}') Integer batchSize
+	@Autowired QuoteSubscriptionRegistry subscriptionRegistry
+
 	@Bean
 	public QuoteSubscriptionRegistry subscriptionRegistry() {
 		def registry = new QuoteSubscriptionRegistry()
@@ -45,31 +55,40 @@ class RtqFlow {
 		registry.subscribe("00123")
 		registry
 	}
-	
+
 	/* Flow def */
 
+	@InboundChannelAdapter(value = "batchQuoteChannel", poller = @Poller(maxMessagesPerPoll = "1", fixedRate = "5000"))
+	@Description("Start by fetch a batch of tickers")
+	public List<String> quoteRequestQueue() {
+		subscriptionRegistry.take(batchSize).collect { t ->
+			def ticker = nowFinanceTicker t
+		}
+	}
+	
 	@Bean
-	@Description("Entry to the messaging system through the gateway.")
+	public MessageChannel batchQuoteChannel() {
+		return MessageChannels.direct().get()
+	}
+
+	@Splitter(inputChannel="batchQuoteChannel", outputChannel="quoteRequestChannel")
+	@Description("Split the batch, each into a quote request message")
+	public List<Message> splitBatch(@Payload List<String> tickers) {
+		tickers.collect { ticker ->
+			MessageBuilder.withPayload(ticker)
+					.setHeader("ticker", ticker)
+					.build()
+		}
+	}
+	
+	@Bean
 	public MessageChannel quoteRequestChannel() {
 		return MessageChannels.direct().get()
 	}
 
-	@InboundChannelAdapter(value = "quoteRequestChannel", poller = @Poller(maxMessagesPerPoll = "1", fixedRate = "5000"))
-	public Message quoteRequestQueue() {
-		def tickers = subscriptionRegistry.take(1)
-		def ticker = nowFinanceTicker tickers[0]
-		MessageBuilder.withPayload(ticker)
-				.setHeader("ticker", ticker)
-				.build()
-	}
-	
-//	@Splitter(inputChannel="batchQuoteChannel", outputChannel="quoteRequestChannel")
-//	public Message splitBatch() {
-//		null
-//	}
-
 	@Bean
 	@ServiceActivator(inputChannel = "quoteRequestChannel")
+	@Description("Fetch the quote for a ticker specified in the message header.")
 	public MessageHandler quoteRequest() {
 		SpelExpressionParser expressionParser = new SpelExpressionParser()
 
@@ -80,7 +99,6 @@ class RtqFlow {
 		handler.setUriVariableExpressions uriVariableExpressions
 		handler.setExpectedResponseType(String.class)
 		handler.setOutputChannelName("transformChannel")
-		//		System.out.println(handler.getConversionService());
 		return handler;
 	}
 
@@ -111,15 +129,10 @@ class RtqFlow {
 		println "quote: ${quote}"
 	}
 
-	//	@ServiceActivator(inputChannel = "loggingChannel")
-	//	LoggingHandler messageLogger() {
-	//		new LoggingHandler("INFO")
-	//	}
-
 	String nowFinanceTicker(String ticker) {
 		def l = ticker.length()
 		if (l < 4 ) {
-			ticker = ticker.padLeft 5, "0"
+			ticker = ticker.padLeft 4, "0"
 		} else if (l > 4) {
 			ticker = ticker[(l - 4)..-1]
 		}

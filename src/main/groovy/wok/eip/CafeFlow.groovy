@@ -82,8 +82,7 @@ class CafeFlow {
 		return IntegrationFlows.from("orders.input")                         // 14
 				.split("payload.items", (Consumer) null)                           // 15
 				.channel(MessageChannels.executor(Executors.newCachedThreadPool()))// 16
-				.route("payload.iced",                                             // 17
-				new Consumer<RouterSpec<ExpressionEvaluatingRouter>>() {         // 18
+				.route("payload.iced", new Consumer<RouterSpec<ExpressionEvaluatingRouter>>() {
 
 					@Override
 					public void accept(RouterSpec<ExpressionEvaluatingRouter> spec) {
