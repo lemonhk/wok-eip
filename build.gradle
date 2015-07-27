@@ -38,6 +38,9 @@ dependencies {
 	
 	compile 'org.springframework.integration:spring-integration-samples:1.0.2.RELEASE'
 	
+	compile "org.springframework.boot:spring-boot-starter-websocket"
+	compile "org.springframework.integration:spring-integration-websocket"
+	
 	compile 'com.google.guava:guava:18.0'
 
     testCompile("org.springframework.boot:spring-boot-starter-test") 
