@@ -1,0 +1,36 @@
+FROM codenvy/shellinabox
+
+# install Java 8
+RUN wget \
+--no-cookies \
+--no-check-certificate \
+--header "Cookie: oraclelicense=accept-securebackup-cookie" \
+-qO- \
+"http://download.oracle.com/otn-pub/java/jdk/8u31-b13/jdk-8u31-linux-x64.tar.gz" | sudo tar -zx -C /opt/
+
+ENV JAVA_HOME /opt/jdk1.8.0_31
+RUN echo "export JAVA_HOME=$JAVA_HOME" >> /home/user/.bashrc
+ENV PATH $JAVA_HOME/bin:$PATH
+RUN echo "export PATH=$PATH" >> /home/user/.bashrc
+
+# mount project sources
+VOLUME ["/home/user/app"]
+ENV CODENVY_APP_BIND_DIR /home/user/app
+
+RUN mkdir /home/user/bld
+ADD wok-eip-unspecified-jar-with-dependencies.zip /home/user/bld/
+RUN unzip -q /home/user/bld/wok-eip-unspecified-jar-with-dependencies.zip -d /home/user/bld && \
+rm /home/user/bld/wok-eip-unspecified-jar-with-dependencies.zip
+
+EXPOSE 8080
+ENV CODENVY_APP_PORT_8080_HTTP 8080
+
+RUN ls -R /home/user/bld/ >> /tmp/wok-eip.log
+
+RUN echo "#!/bin/bash" > /home/user/startup.sh
+RUN echo "" >> /home/user/startup.sh
+RUN echo "java -jar /home/user/bld/application.jar" >> /home/user/startup.sh
+RUN chmod +x /home/user/startup.sh
+
+CMD /home/user/startup.sh
+
