@@ -28,11 +28,23 @@ import org.springframework.stereotype.Controller
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.socket.messaging.StompSubProtocolHandler
-
+/**
+ * 
+ * @author jack
+ *
+ */
 @Configuration
 @EnableIntegration
 @IntegrationComponentScan
 class WebsocketFlows {
+	/**
+	 * References:
+	 * <ul>
+	 * <li>{@link <a href="https://github.com/spring-guides/gs-messaging-stomp-websocket">gs-messaging-stomp-websocket</a>}
+     * <li>{@link <a href="https://github.com/joshlong/techtips/tree/master/examples/spring-integration-4.1-websockets-example">SI-websocket</a>}
+     * <li>{@link <a href="https://github.com/spring-projects/spring-integration-samples/tree/master/applications/stomp-chat">stomp-chat</a>
+     * </ul>
+	 */
 	//Server side
 	@Bean
 	IntegrationWebSocketContainer serverWebSocketContainer() {SimpleMetadataStore
