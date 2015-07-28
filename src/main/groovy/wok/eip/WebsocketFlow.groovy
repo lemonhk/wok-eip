@@ -47,7 +47,7 @@ class WebsocketFlows {
 	 */
 	//Server side
 	@Bean
-	IntegrationWebSocketContainer serverWebSocketContainer() {SimpleMetadataStore
+	IntegrationWebSocketContainer serverWebSocketContainer() {
 		return new ServerWebSocketContainer("/endpoint").withSockJs();
 	}
 	
